@@ -6,12 +6,12 @@ BOOT0 to 1
 RESET to 1
 RESET to 0
 
-### boot mode enter
+### 1. boot mode enter
 
 TX 0x7F
 RX 0x79
 
-### flash erase
+### 2. flash erase
 TX 0x43
 TX 0xBC
 RX 0x79		// erasing flash
@@ -20,7 +20,7 @@ TX 0xFF
 TX 0x00
 RX 0x79		// flash Erase success
 
-### load update
+### 3. load update
 
 ------- loop ---------------
 TX 0x31
@@ -53,13 +53,11 @@ checksunm TX -- XOR(send byte)
 RX 0x79		// packet send done .........................
 
 
-
-
 512KB files
-
 
 BOOT0 to 0
 
 RESET to 1
 RESET to 0
+
 ----------------------------------------------
