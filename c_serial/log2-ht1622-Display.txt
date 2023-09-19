@@ -1,0 +1,122 @@
+#Story 
+1.HT1622 Display
+    - one way com 
+    - get json object(150 chr length) from NodeJS and parse values
+    - Conenctivity
+        * bk: clock select : GPIO 12
+        * rd: write        : GPIO 47
+        * wh: data         : GPIO 48
+        * ye: VCC          : 5V
+        * or: Ground       : G
+        * gr: backlight    : G
+        
+    
+2.NodeJS program 
+    - 
+3.emLinux on Sigmstar
+    - wifi (connectivity), UART(for ), GPIO(for display)
+
+
+Architecture ======================================================================================
+
+Server writes to-> /temp/my_fifo <-+ 
+                                   +-- Display0s1.c (thread1) Read the Json object,
+                                                              
+                                   +-- Display0s1.c (thread2) Control teh segments
+1.NodeJS
+2.DisplayOS1.c
+    +-  ht1622_lib.h 
+        +-  sbc2d06_gpio.c
+    
+    2.1 DisplayOS1.c
+    - All teh pages written and segments need to open is witten and commented at the top of the code
+    - Two main threads
+    - thread One > open a fifo pipe as /temp/my_fifo and listening to the fifo buffer and save to a pointer called json(*json)
+    - thread two > Pages
+        * Controlling sengments
+        - There are 2 types 
+            + segments (S) on off
+            + digits (D)   value
+        - Segments (S)
+            ex: s10 PLUG YOUR EV , from teh table (address,bus) => (Com1, 13) 
+            Segment_(S10, ON)
+                +--> this calls a fuction in ht1622_lib.c
+                    
+                    case 10: // S10  (address,bus) => (COM1, 13) 
+                    state ? Ht1622WrOneData3(26, 0x01) : Ht1622WrOneData4(26, 0x01);
+                                                                        (busX2) 0001
+                                                                        
+                    Note : com1-com4, bus = busX2
+                           com5-com8, bus = busX2 + 1
+                           
+                    case 19: // S19  (address,bus) => (COM8, 26)
+                    state ? Ht1622WrOneData3(53, 0x08) : Ht1622WrOneData4(53, 0x08);
+                                                                        (busX2) 1000
+        - Digits (D)
+            ex: 
+            
+        
+    2.3 sbc2d06_gpio.c
+    - GPIO lib for the sigmastar
+    - SPI protocol implented 
+            
+        
+    
+
+Process ===========================================================================================
+1. Main Program is DisplayOS1.c
+
+2. Export your path
+export  PATH=/home/vega/Downloads/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf/bin:$PATH
+
+3. Complile it using 
+arm-linux-gnueabihf-gcc DisplayOS1.c ht1622_lib.c sbc2d06_gpio.c -pthread cJSON.c -o dis
+
+4. Copy the executable file(dis) to SD card 
+
+5. Run NodeJS and executable file as parallel process
+/sdcard/dis &
+node /sdcard/node/controller.js
+
+
+one thread if dis is looking at the /temp/my_fifo 
+controller.js starts a Node server<- this will be done by SE team
+    this writes json objects to /temp/my_fifo
+
+if somebody write json file to that fifo file(from network)
+thread will catch it open the pages 
+
+
+
+                          
+                          
+
+Key Glossary ===========================================================
+JSON 
+data = '{\"abc\" : \"xyz\", 
+         \"def\" : \"pqr" , }'
+         
+
+Key         Val 
+page        67-76,90,3,2,1 
+id          A1234
+kwh         00.0
+cost        00000.00
+time        6769
+bal         00000.00
+error 
+
+
+
+Procedure ================================================================
+ideling : LAST CHARGE charge id, kwh,cost, time
+tapcard or plugging ev : VERIFING 
+                  +-fail FAIL
+                  
+                  
+
+
+    
+    
+    
+    
