@@ -1,0 +1,832 @@
+01.06.2022
+repeatedly tested with Linux 20.04 for build
+following the documentation http://doc.industio.com/docs/ssd20x_manual/ssd20x_manual-1cradq5hh4qn2
+Flow 
+
+ssd202D_files.zip
+|
++-unzip and put on the same dir
+    +-install libs
+        +-compile buildroot
+        |   +-save package configuration
+        |       +-make buildroot
+        |           +-generate rootfs.tar.gz in project/images/rootfs
+        +-save kernel configuration
+        +-compile Release_to_customer.sh
+            +-copy wifi kernel modules
+            +-Packaging
+                +-genarate SigmastarUpgradeSD.bin in /project/image/output/images/
+                    +-save to SD card
+                        +-add new kernel
+                            +-do wifi configuration
+                    
+
+builtroot dir: ARCH=arm make menuconfig
+
+
+1. Follow the Documentation
+    Install The Cross Compilation Tool Chain
+        Extract gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf.tar.gz
+            # tar  -xvf  gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf.tar.gz
+        Modifying environment variables according to your environment
+            #vi  ~/.bashrc
+            #export  PATH=/home/ronnie/work3/ssd201/gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf/bin:$PATH
+        Verify
+            #source  ~/.bashrc
+            #which  arm-linux-gnueabihf-gcc
+    
+    Install The SDK Source
+            # tar -xvf boot.tar.gz
+            # tar -xvf gcc-arm-8.2-2018.08-x86_64-arm-linux-gnueabihf.tar.gz
+            # tar -xvf kernel.tar.gz
+            # tar -xvf project.tar.gz
+            #tar -xvf sdk.tar.gz
+    
+    Install and Compile the Required Lib & Tool
+        View sh default options
+            # ls -l /bin/sh
+        Change sh to bash
+            # sudo dpkg-reconfigure dash
+            Then choose no to solve the problem of Script Compilation -e
+        
+        Install lib
+            # sudo apt-get  install libncurses5-dev
+            # sudo apt-get  install lib32z1
+            # sudo apt-get  install lib32stdc++6*
+            # sudo apt-get  install pkg-config
+            # sudo apt-get install libc6-dev-i386
+            # sudo apt-get install lib32z1 lib32ncurses6
+            # sudo apt-get install libuuid1:i386    
+            # sudo apt-get install cmake
+            # sudo apt-get install libncurses5-dev libncursesw5-dev
+            # sudo apt install bc
+            # sudo apt-get install xz-utils
+            # sudo apt-get install automake
+            # sudo apt-get install libtool
+            # sudo apt-get install libevdev-dev
+            # sudo apt-get install pkg-config
+            
+        Install tool
+            # sudo apt-get install openssh-server
+            # sudo apt-get install xz-utils
+            # sudo apt-get install python
+            # sudo apt-get install git
+            # sudo apt-get install make
+            # sudo apt-get install gcc
+            # sudo apt-get install g++
+        
+    Compile builderroot
+            loading custom toolchain to the builtroot
+            * save the ssd20x_defconfig in to the builtroot/configs/
+            # ARCH=arm make ssd20x_defconfig
+            
+            
+            # tar -jxvf buildroot-2020.05.tar.bz2 -C .
+            # cd buildroot-2020.05/
+            # ARCH=arm make menuconfig
+            
+            Target options-> EABIhf
+            Toolchain Type–> (External toolchain)
+            Toolchain –> (Custom toolchain)
+            Toolchain origin–> ptovide the path ...bihf
+            gcc 8.X
+            series 4.10.x
+            C library (glibc/eglibc)
+            
+            save 
+            
+            * For WIFI eneble below modules
+            Target Packages > Network Applications
+                [*] dhcpd
+                [*] bridge utils
+                [*] wireless tools 
+                    [*] install shared library
+            
+            #make
+            
+            ------------------------------------------
+            change wifi chip reset pin in 
+            /project/image/configs/i2m/spinand.ubifs.p2.partition.config
+            
+            wifi24mclkcmd = mw 1f001cc0 11
+            wifirstoffcmd = gpio out 71 0
+            wifirstoncmd = gpio out 71 1
+                    
+            ------------------------------------------
+            host-tar issue
+            before make, clean the world
+            $make world clean
+            
+            When the compilation is complete, we will generate the file system we need in the output/target/ directory.
+            -------------------------------------------
+            
+            
+
+2. 
+    2.1 
+    Kernel configuration
+    /kernel
+    $ARCH=arm make menuconfig
+    
+    2.2 
+    802.1D Ethernet Bridge
+    
+    Y : built in to kernel: .ko files does not appear. inbuilt to the kernel automatially. no need to add separately 
+    M : modularized features : .ko files appear in kernel/modules, should add them separately to the OS once it is burn and loaded to startup during start
+    
+    *   if you have made any change to the kernel,you need to build the kernel again 
+    that happens when you run the Release_to_customer.sh command
+    
+    but you have to uncomment the 'make clean' to build the kernel build kernel
+    
+    *   to avoid resetting, you have to do below changes to the ./Release_to_customer
+        -------------------------------------------------------
+        cp .config arch/arm/configs/infinity2m_spinand_ssc011a_s01a_minigui_doublenet_defconfig
+		#make infinity2m_spinand_ssc011a_s01a_minigui_defconfig
+		make ${KERNEL_DEFCONFIG}
+		-------------------------------------------------------
+	
+    
+    
+    
+        when you do that new kernel modules applear in kernel/modules/
+        bridge.ko, llc.ko, spt.ko
+    
+        copy them to the sd card and later use insmod to add those wifi kerment modules according to the documentation
+    
+
+3.
+    Refer File_system_customization on Manual
+            # mkdir output/images/rootfs
+            # tar -xvf output/images/rootfs.tar -C output/images/rootfs
+            # cd output/images/
+            # tar -cvf rootfs.tar.gz rootfs
+
+
+    copy rootfs.tar.gz 
+    from /builtroot/output/images/
+    to   /project/image/rootfs
+    or
+            # cp output/images/rootfs.tar.gz  ../project/image/rootfs/rootfs.tar.gz -f
+
+
+--
+3.5 Sorting out memory issue
+    open below file that sets memory to 128mb in /project/configs/nvr/i2m/8.2.1
+    spinand.glibc.011a.128
+
+    change below line from sz=0x3800000 to a lower value such as sz=0xA00000
+    the 128mb mem is devided to 64 to the mem and 64 to the display and audio.
+    we do not need display and audio
+    so we can reduce shared mem
+    
+    KERNEL_BOOT_ENV = LX_MEM=$(KERNEL_MEMLEN) mma_heap=mma_heap_name0,miu=0,sz=0xA00000 mma_memblock_remove=1 highres=off
+
+
+
+
+--compiling kernal and rootfs
+4.
+    run Release_to_Customer.sh
+    ./Release_to_customer.sh -f nand -p ssd202 -o 2D06
+
+-- packaging
+5. cd in to /project
+    ./make_sd_upgrade_sigmastar.sh 
+     
+    Upgrade [[cis.es? (y/N)y
+    Upgrade [[set_partition.es? (y/N)y
+    Upgrade [[ipl.es? (y/N)y
+    Upgrade [[ipl_cust.es? (y/N)y
+    Upgrade [[uboot.es? (y/N)y
+    Upgrade [[logo.es? (y/N)y
+    Upgrade [[kernel.es? (y/N)y
+    Upgrade [[rootfs.es? (y/N)y
+    Upgrade [[miservice.es? (y/N)y
+    Upgrade [[customer.es? (y/N)y
+    Upgrade [[appconfigs.es? (y/N)ycd
+    UpgradeImage Generating.....
+    1+0 records in
+    1+0 records out
+    16 bytes copied, 9.1782e-05 s, 174 kB/s
+
+6.
+    /project/image/output/images/SigmastarUpgradeSD.bin
+    save to SD card and plug it
+
+
+7. 
+    Connect the serial conenctor and identify its usb serial name
+    $dmesg
+    FTDI USB Serial Device converter now attached to ttyUSB1
+
+8.
+    Open pytty 
+    $sudo putty
+
+9.
+    Connect Serial to 
+    dev/ttyUSB1 115200
+
+10. 
+loading from a new kernel
+Connect to Uboot
+    when starting from Uboot, during 'Auto Negotiation' press enter
+    connect as #sigmastar
+    
+        # setenv UpgradePort 1
+        # setenv sdautoupgrade 0
+        # saveenv
+        # sdstar
+    
+    press the reset button
+    
+
+11. 
+    If everything loads well,
+    Manufacture: SigmaStar Inc will appear
+    
+    Congradualtions!!
+    
+            #reboot
+            #poweroff
+    
+    SD card is not mounting to /sdcard
+    --------------------------------------------------------
+    go to etc/hotplug/
+    edit 
+    mount /dev/mmcblk0p1 /sdcard -o iocharset=utf8
+    to 
+    mount /dev/mmcblk1p1 /sdcard -o iocharset=utf8
+    
+    and save
+    
+    remove and insert SD card
+    --------------------------------------------------------   
+
+    WIFI configuration 
+    
+    1. check interface wlan is enable
+            # vi project/image/configs/i2m/rootfs.mk
+    2. interface_wlan is configured 
+            # vi project/release/customer_tailor/nvr_i2m_display_glibc_tailor.mk
+            
+    3.Turn on the device
+    --------------------------------------------------------
+    go to etc/hotplug/
+    edit 
+    mount /dev/mmcblk0p1 /sdcard -o iocharset=utf8
+    to 
+    mount /dev/mmcblk1p1 /sdcard -o iocharset=utf8
+    
+    and save
+    -------------------------------------------------------- 
+
+4.mkdir to copy .ko files
+        #mkdir wifi
+        #cp sdcard/bridge.ko wifi/
+        #cp sdcard/llc.ko wifi/
+        #cp sdcard/stp.ko wifi/
+        
+(5. Reset wifi chip) - You may not need to do this
+        # echo ON > /dev/wifi_reset
+        # echo OFF > /dev/wifi_reset
+
+6. load kernel modules
+        #insmod /wifi/llc.ko
+        #insmod /wifi/stp.ko
+        #insmod /wifi/bridge.ko
+        #/config/wifi/ssw01bInit.sh
+        
+---------------------------------------------------------------
+Ignore Invalid argument error
+----------------------------------------------------------------
+
+        #ifconfig wlan0 up
+        #ifconfig wlan0
+        
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/lib:/config/wifi
+----------------------------------------------------------------
+(7. Configure he bridge) - You may not need to do this
+        # ifconfig p2p0 up
+        # ifconfig wlan0 0.0.0.0
+        # ifconfig p2p0 0.0.0.0
+        # brctl addbr br0
+        # brctl addif br0 wlan0
+        # brctl addif br0 p2p0
+        # ifconfig br0 up
+------------------------------------------------------------------- 
+
+
+
+8. Add network details to WPA_Suppicant 
+
+    ctrl_interface=/tmp/wifi/run/wpa_supplicant
+    update_config=1
+    ap_scan=1
+    autoscan=periodic:10
+    disable_scan_offload=1
+    network={
+            ssid="chargeNET"
+            psk="JB390BEAM2D"
+            key_mgmt=WPA-PSK
+            scan_ssid=1
+            }
+
+        
+
+9. Connecting to hotspots        
+        #/config/wifi/wpa_supplicant -Dnl80211 -i wlan0 -c /appconfigs/wpa_supplicant.conf &
+
+
+        /wifi/wifi_bringup.sh
+        
+        
+10. USB Tap card
+    Kernel module generate 
+    cdc-acm.ko
+    
+    kernel menuconfig
+        Device drivers
+            +USB Support 
+                +USB Support 
+                    +<M>USB Gadget Suppotr
+                        +<M>USB Gadget Drivers 
+                +<M>USB Modem (CDC ACM) support
+                        
+                        
+     terminal 1: echo -ne '{"m":2 , "k":"MjU1LDUxLDM0LDY4LDE"}' > /dev/ttyACM0
+     terminal 2: cat < /dev/ttyACM0
+     
+
+    #RFID Init --------------------------------------------------------------------
+    insmod /customer/modules/cdc-acm.ko
+    
+    sleep 5
+    
+    echo -ne '{"m":2 , "k":"MjU1LDUxLDM0LDY4LDE"}' > /dev/ttyACM0
+    
+    sleep 1
+    
+    #--------------------------------------------------------------------------------
+
+                    
+11. 4G
+
+    buildroot libqmi
+    
+    Target Packages > Libraries > Other > [*] libglib2
+                                > hardware handling > [*] libqmi    
+    
+    kernel menuconfig
+        Device drivers
+            +USB Support 
+                +USB Support 
+                    +<M>USB Modem (CDC ACM) support
+        
+            +Network device support
+                +<M>USB Network Adapters
+                    +Multi-purpose USB Networking Framework
+            
+            ..more
+        
+                    
+    
+
+  
+    Commands 
+
+        insmod cdc-acm.ko
+        insmod /customer/modules/cdc-acm.ko
+        
+         vi /etc/resolv.conf
+        nameserver 8.8.4.4
+         
+         insmod cdc-wdm.ko
+         insmod usbnet.ko
+         insmod qmi_wwan.ko                # open source Linux in-kernel driver supporting Qualcomm Qualcomm MSM (QMI) interface
+        
+         ip link set dev wwan0 down
+         echo Y > /sys/class/net/wwan0/qmi/raw_ip
+         ip link set dev wwan0 up
+        
+         echo "nameserver 8.8.4.4" > /etc/resolv.conf
+        
+        qmicli --device=/dev/cdc-wdm0 --device-open-proxy --wds-start-network="ip-type=4,apn=ppwap" --client-no-release-cid --device-open-qmi
+        udhcpc -q -f -n -i wwan0
+    
+    # 4G init--------------------------------------------------------------------------------------
+    
+    insmod /customer/modules/cdc-wdm.ko
+    insmod /customer/modules/usbnet.ko
+    insmod /customer/modules/qmi_wwan.ko
+    
+    ip link set dev wwan0 down
+    echo Y > /sys/class/net/wwan0/qmi/raw_ip
+    ip link set dev wwan0 up
+    
+    qmicli --device=/dev/cdc-wdm0 --device-open-proxy --wds-start-network="ip-type=4,apn=ppwap" --client-no-release-cid --device-open-qmi
+    sleep 3
+    
+    udhcpc -q -f -n -i wwan0
+    echo "nameserver 8.8.4.4" > /etc/resolv.conf
+    
+    echo Done_initializing
+    
+    
+    
+    #------------------------------------------------------------------------------------------------
+
+    4G strength
+    
+    # qmicli --device=/dev/cdc-wdm0 --nas-get-signal-strength
+    
+    https://www.freedesktop.org/software/libqmi/man/latest/qmicli.1.html
+
+    ERROR :  4G Quectel Module not conencting error after a new bin load
+   * This happend when stamp burn with a new bin and try to load Quectel during bootup without a POWER RESET
+   *    usbcore: registered new interface driver cdc_wdm
+        usbcore: registered new interface driver qmi_wwan
+        ip: SIOCGIFFLAGS: No such device
+        /customer/demo.sh: line 121: can't create /sys/class/net/wwan0/qmi/raw_ip: nonexistent directory
+        ip: SIOCGIFFLAGS: No such device
+    
+    Solution
+    * poweroff the SOM with 4G module and then restart
+    
+
+
+15. Respawn a process : process not killing
+
+    Add below script to /etc/inittab
+    inittab is as same as systemmd in busybox
+    
+    ::respawn:/customer/initProg.sh
+
+
+16 RUN AT STARTUP
+
+    From the builtroot documentation
+    The first solution is BusyBox. Amongst many programs, BusyBox has an implementation of a basic init program, which is sufficient for most embedded systems. Enabling the BR2_INIT_BUSYBOX will ensure BusyBox will build and install its init program. This is the default solution in Buildroot. The BusyBox init program will read the /etc/inittab file at boot to know what to do. The syntax of this file can be found in http://git.busybox.net/busybox/tree/examples/inittab (note that BusyBox inittab syntax is special: do not use a random inittab documentation from the Internet to learn about BusyBox inittab). The default inittab in Buildroot is stored in system/skeleton/etc/inittab. Apart from mounting a few important filesystems, the main job the default inittab does is to start the /etc/init.d/rcS shell script, and start a getty program (which provides a login prompt). 
+    
+    We can edit rcS to run a .sh file that gave permission to execute 
+    chmod +x path/to/file.sh
+    
+    in scS file,  customer/demo.sh is running
+    So adding commands to that 
+    will run at startup 
+    
+    17 Run in Background 
+    run in background and not killed the process when new terminal is opened
+    all the output will be recorded in nohup.out
+    
+    #nohup xx.xx & cd .cha  
+
+
+18. RS484 communication
+
+    SSD202D ===(Serial FastUART tx,rx)======|RS485 Transever|=====(A,B)== ~ ====[[ RS485 Transever + UART>USB serial]] => COM
+    (master)                                                        ^^^(slaves connect here)                                                 
+    
+    
+    
+    set baud rate: 
+    stty -F /dev/ttyS2 115200
+    
+    stop echo loop that disturb tx line at master:
+    stty -F /dev/ttyS2 -echo -onlcr
+    
+    check settings 
+    stty < /dev/ttyS2
+    
+    echo -ne 'aasd\n' > /dev/ttyS2
+    cat < /dev/ttyS2
+
+
+
+19. ntp date and time sync
+    Target packages > Networking application > [*]ntp [*]ntpd
+    build 
+    
+    *have to add to the startup
+    #ntpd -gq
+    
+    set the system time manually
+        
+    date MMDDHHMMYYYY
+    hwclock --systohc
+    
+    set the system time and time zone automatically
+    #ntpd -gq
+    #export TZ=UTC-5:30
+
+
+
+20. Watchdog 
+    target package > systemtools > [*]watchdog
+
+    Processor -------- dog
+    processor feed dog at t time (10 sec)
+    if dog is not fed for T time (60 sec)
+    system restarts
+    
+    *have to add to the startup
+    #watchdog -t 10 -T 60 /dev/watchdog
+
+
+21 Seria communication
+    Use bin files 07_07
+    1. go to kernel/.conf
+    2. find the name on CONFIG_SS_DTB_NAME 
+        infinity2m-spinand-ssc011a-s01a-rgb565-rmii-doublenet
+    3. find .dts files in kenel direcotry 
+        infinity2m-spinand-ssc011a-s01a-rgb565-rmii-doublenet.dts
+    4. see the includes. all setting for gipo pins stays there
+    5. open those files and enable 
+    k build 
+
+
+    to listen to ttyS1 MCU
+    enable partiy bit 
+    #stty -F /dev/ttyS1 parenb
+    
+    select even parrity
+    #stty -F /dev/ttyS1 -parodd
+    
+    get hex values
+    od -x < /dev/ttyS1
+    
+    
+    stty command ref
+    https://sites.ualberta.ca/dept/chemeng/AIX-43/share/man/info/C/a_doc_lib/cmds/aixcmds5/stty.htm#:~:text=Description,with%20POSIX%20and%20BSD%20interfaces
+    
+    
+    
+    #include "infinity2m-doublenet.dtsi"
+    #include "infinity2m-ssc011a-s01a-rgb565-rmii-doublenet.dtsi"
+    #include "infinity2m-ssc011a-s01a-padmux-rgb565-rmii-doublenet.dtsi"
+    
+    these modifications did to thoses files to enable ttyS1 (UART1) - these are the lines should be
+    "infinity2m-doublenet.dtsi"
+    
+    -------- UART1 should be enabled----------------------------------
+    uart1: uart1@1F221200 {
+                compatible = "sstar,uart";
+                reg = <0x1F221200 0x100>;
+                interrupts = <GIC_SPI INT_IRQ_UART_1 IRQ_TYPE_LEVEL_HIGH>;
+                clocks = <&CLK_uart1>;
+                status = "ok";
+    -------- for UART3 where pin 8 and 9 configured to spo0 shou;d be disabled
+    spi: spi {
+                compatible = "sstar_spi";
+                io_phy_addr = <0x1f000000>;
+                banks = <0x1110>,<0x1111>,<0x1038>,<0x101E>,<0x100B>;
+                clocks = <&CLK_mspi0>;
+                interrupts = <GIC_SPI INT_IRQ_MSPI_0 IRQ_TYPE_LEVEL_HIGH>;
+                /*
+                 * padmux:
+                 * mode=1: PAD_PM_SD_CDZ,PAD_SD_D1,PAD_SD_D0,PAD_SD_CLK,PAD_SD_CMD
+                 * mode=2: PAD_TTL16,PAD_TTL17,PAD_TTL18,PAD_TTL19
+                 * mode=3: PAD_GPIO4,PAD_GPIO5,PAD_GPIO6,PAD_GPIO7
+                 * mode=4: PAD_FUART_RX,PAD_FUART_TX,PAD_FUART_CTS,PAD_FUART_RTS
+                 * mode=5: PAD_GPIO8,PAD_GPIO9,PAD_GPIO10,PAD_GPIO11
+                 * mode=6: PAD_GPIO0,PAD_GPIO1,PAD_GPIO2,PAD_GPIO3
+                 */
+                dma = <1>;
+                spi0_mode = <5>;
+                status = "disabled";
+    
+    	    spidev: spidev0 {
+                    compatible = "rohm,dh2228fv";
+                    reg = <0>;
+                    status = "disabled";
+                };
+    -------- for uart1
+    /*
+            core_voltage {
+                vid_width = <2>;
+                vid_gpios = <PAD_UART1_RX PAD_SAR_GPIO1>;
+                vid_voltages = <850 900 950 1000>;  //2b'00 2b'01 2b'10 2b'11
+            };
+    */
+    ------- for uart3
+    infinity2m-ssc011a-s01a-padmux-rgb565-rmii-doublenet.dtsi
+    
+    <PAD_GPIO8	PINMUX_FOR_UART2_MODE_1  	MDRV_PUSE_UART2_RX>,
+    <PAD_GPIO9  PINMUX_FOR_UART2_MODE_1	    MDRV_PUSE_UART2_TX>,
+    
+    PAD_UART1_RX         PINMUX_FOR_UART1_MODE_1       MDRV_PUSE_UART1_RX >,
+    PAD_UART1_TX         PINMUX_FOR_UART1_MODE_1       MDRV_PUSE_UART1_TX >,
+     
+    ------------------------------------------------------------  
+    infinity2m-ssc011a-s01a-padmux-rgb565-rmii-doublenet.dtsi   
+    i2c0@0{
+                compatible = "sstar,i2c";
+                reg = <0x1F223000 0x200>,<0x1F203c00 0x200>,<0x1F207000 0x200>;
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+                clocks = <&CLK_miic0>;
+                i2c-group = <0>;
+                /*
+                 * padmux: 1 -> PAD_HDMITX_SCL, PAD_HDMITX_SDA
+                 *         2 -> PAD_TTL1, PAD_TTL2
+                 *         3 -> PAD_TTL14, PAD_TTL15
+                 *         4 -> PAD_GPIO6, PAD_GPIO7
+                */
+                i2c-padmux = <0>;
+               /*
+                  *  speed: 0 -> HWI2C_HIGH(high speed: 400 KHz)
+                  *         1 -> HWI2C_NORMAL(normal speed: 300 KHz)
+                  *         2 -> HWI2C_SLOW(slow speed: 200 KHz)
+                  *         3 -> HWI2C_VSLOW(very slow: 100 KHz)
+                  *         4 -> HWI2C_USLOW(ultra slow: 50 KHz)
+                  *         5 -> HWI2C_UVSLOW(ultra-very slow: 25 KHz)
+                  */
+                i2c-speed = <3>;
+                i2c-en-dma = <0>;  // 0: disable; 1: enable;
+                status = "disabled";
+            };
+    
+            i2c1@1{
+                compatible = "sstar,i2c";
+                reg = <0x1F223200 0x200>,<0x1F203c00 0x200>,<0x1F207000 0x200>;
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+                clocks = <&CLK_miic1>;
+                i2c-group = <1>;
+                /*
+                 * padmux: 1 -> PAD_GPIO2, PAD_GPIO3
+                 *         2 -> PAD_HDMITX_SCL, PAD_HDMITX_SDA
+                 *         4 -> PAD_TTL22, PAD_TTL23
+                 *         5 -> PAD_SD_CLK, PAD_SD_CMD
+                */
+                i2c-padmux = <1>;
+                /*
+                  *  speed: 0 -> HWI2C_HIGH(high speed: 400 KHz)
+                  *         1 -> HWI2C_NORMAL(normal speed: 300 KHz)
+                  *         2 -> HWI2C_SLOW(slow speed: 200 KHz)
+                  *         3 -> HWI2C_VSLOW(very slow: 100 KHz)
+                  *         4 -> HWI2C_USLOW(ultra slow: 50 KHz)
+                  *         5 -> HWI2C_UVSLOW(ultra-very slow: 25 KHz)
+                  */
+                i2c-speed = <3>;
+                i2c-en-dma = <0>;  // 0: disable; 1: enable;
+                status = "disabled";
+                focaltech@38{
+                    compatible = "focaltech,fts"; /* do not modify */
+                    reg = <0x38>; /* do not modify */
+                    interrupts-extended = <&ms_gpi_intc INT_GPI_FIQ_GPIO13>;
+                    focaltech,reset-gpio = <PAD_GPIO12>; /* RST脚 */
+                    focaltech,irq-gpio = <PAD_GPIO13>; /* INT脚 */
+                    focaltech,max-touch-number = <10>; /* 最大触点数 */
+                    //focaltech,display-coords = <0 0 720 720>; /* 分辨率 */
+                    focaltech,display-coords = <0 0 480 480>; /* 分辨率 */
+                    status = "disabled";
+                };
+            
+            
+
+22. cTunnel
+
+    - Install npm packages in thegiven order 
+
+23. ZRAM SWAP
+    https://www.embedded-geek.com/technotes/zram-as-swap-device-on-embedded-linux-systems
+    
+    CONFIG_SWAP
+        kconfig> General setup > [*]Support for paging of anonymous memory (swap)
+    
+    CONFIG_ZSMALLOC
+        kconfig> Kernel Features> [*] Memory Allocator for Compressed Pages
+        kconfig> Kernel Features> <*> Memory Allocator for Compressed Pages
+                                    [*] Export zsmalloc statistics
+                                
+    CONFIG_ZRAM
+        kconfig> Device Drivers> [*]Block Devices 
+                                    <*> Compressed RAM block device support
+    
+    CONFIG_ZRAM_LZ4_COMPRESS
+        kconfig> Cryptographic API > <*> LZ4 compression algorithem
+        
+    
+
+    #!/bin/sh
+    
+    echo "1" > /sys/block/zram0/reset
+    echo $(( 64 * 1024 * 1024 )) >"/sys/block/zram0/disksize"
+    mkswap /dev/zram0
+    swapon /dev/zram0
+
+
+24. NodeJS
+    
+    Installing this to a fresh buildroot(tested to fresh buildroot 2020.11.1 with toolchain 2018.08)
+    [*]nodejs
+    [*]NPM for the target
+    (ssh2) Additional Modules
+    
+    --------------- Nodejs installations
+    cd in to chargerFiles/node/
+    npm install serialport@10.4.0   (which is compatiple only with node 12.19.1 or above)
+    npm install easy-crc (this is the only compatible crc module)
+    npm install hex2dec
+    
+====== Buildroot tested package addition oder =======
+buildroot-2020.11.1
+gcc-arm-8.2-2018.08-x86
+
+1. NodeJS
+2. Wireless tools
+3. ntp
+[4. watchdog]
+5. libglib2
+6. libqmi
+7. libressl
+9. openssl binary
+
+
+
+
+============= Flashing ==============================
+1. Connect the SSD202D pluggble to the board
+2. Serial Converter connect to
+TX: PM_UART_TX
+RX: PM_UART_TX
+GND: GND
+xconnect to COM port
+
+3. connect  microusb to COM port
+4. http://doc.industio.com/docs/ssd20x_manual/ssd20x_manual-1crk949pkesrr
+follow but
+after erasing 'All chip'
+do NOT do the next step 'erase - File area'
+
+
+======= After bin ==================================
+1. run /sdcard/filesetup.sh to setup files
+2. respawn display
+::respawn:/customer/dis0_5_48 &> logDisp.text
+::respawn:node /customer/nodeloop.js &> logNode.txt
+3. comment/uncomment the network connectiviry tipe in contest.sh
+4. reboot
+
+
+
+
+    
+        
+------------------------------------------------------
+build1- 2020 buildroot(wifi,node12,ssl)    + 2018toolchain(glibc 2.28) + old ssd20x_defconfig > OK ?old nodejs
+
+build2- 2020 builtroot
+
+build3- 2023 buildroot()                   + 8.X(glibc 2.28) toolchain + new ssd20x_defconfig > OK
+
+build4- 2023 buildroot(nodejs)             + 8.X(glibc 2.28) toolchain + new ssd20x_defconfig > build error
+                                                                                     no module name _bz2
+
+build5- 2023 buildroot(node16,libressl)    + 8.X(glibc 2.28) toolchain + old ssd20x_defconfig >> Kernel Panic GLIBC 2.33,2.34 not found               
+
+build6- 2023 buildroot()                   + 12.X(glibc 2.36) toolchain + old ssde0x_defconfig > Kernel Panic GLIBC 2.33,2.34 not found
+
+build7- 2023 buildroot()                   + 12.X(glibc 2.36) toolchain + New ssde0x_defconfig > Kernel Panic GLIBC 2.33,2.34 not found
+
+Assume: Host system(linux building machine) Glibc is 2.35, so it cant build 12.X toolchain that has glibc 2.36. it completes a build but leads to kernel panic. 10.X toolchain has lower glibc version 2.31. so no Kernel Pnic
+
+build8- 2023 buildroot()                   + 10.X(glibc 2.31) toolchain + old ssde0x_defconfig > (change gcc v,kernel headder v, in 10.X toolchain /bin/arm-none-linux-gnueabihf-strip, copy and rename as arm-linux-gnueabihf-strip)
+                                                                                       OK
+
+build9- 2023 buildroot(nodejs)             + 10.X(glibc 2.31) toolchain + old ssde0x_defconfig > OK But version GLIBC_2.29 not found when running #node -v
+
+build10- 2022.2.1(has node14.18.0) buildroot()   + 10.X(glibc 2.31) toolchain + old ssde0x_defconfig > OK
+
+build11- 2022.2.1(has node14.18.0) buildroot(nodejs)   + 10.X(glibc 2.31) toolchain + old ssde0x_defconfig > built error arm-none-linux-gnueabihf-g++: internal compiler error
+
+build12- 2022.5. (has node16.15.0) buildroot()  + 10.X(glibc 2.31) toolchain + old ssde0x_defconfig > built error with obj/deps/v8/src/runtime/v8_base_without_compiler.runtime-wasm.o 
+/usr/include/c++/11/tuple:290:9: internal compiler error: Segmentation fault
+  290 |         _Tuple_impl(_UHead&& __head, _UTail&&... __tail)
+      |         ^~~~~~~~~~~
+
+build13- 2022.5. (has node16.15.0) buildroot()  + 10.X(glibc 2.31) toolchain + new ssde0x_defconfig > built error : openssl, new defcon file does not have the libressl option
+
+build14- 2022.5. (has node16.15.0) buildroot()  + 8.X(glibc 2.28) toolchain + old ssde0x_defconfig > build error
+
+build15- 2023 (has node16.15.0) buildroot()  + 8.X(glibc 2.28) toolchain + old ssde0x_defconfig > build error
+
+
+------------------------------- stats -------------------------------------------
+
+wifi + 4g + cTunnel 
+Mem: 60368K used, 3396K free, 100K shrd, 0K buff, 22808K cached
+CPU:   0% usr   0% sys   0% nic 100% idle   0% io   0% irq   0% sirq
+
+wifi + 4g + cTunnel + display
+Mem: 62304K used, 1460K free, 100K shrd, 0K buff, 15512K cached
+CPU:   5% usr  46% sys   0% nic  47% idle   0% io   0% irq   0% sirq
+
+--- with mem adjustment
+wifi + 4g + watchdo
+Mem: 43920K used, 68552K free, 96K shrd, 0K buff, 17380K cached
+CPU:   0% usr   0% sys   0% nic 100% idle   0% io   0% irq   0% sirq
+Load average: 1.01 0.40 0.15 1/78 1090
+
