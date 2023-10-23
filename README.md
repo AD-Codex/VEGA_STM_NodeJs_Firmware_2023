@@ -29,21 +29,21 @@
 |0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|<br>
 +---------------+---------------+---------------+---------------+<br>
 
-5. TX - <br>
+4. TX - <br>
 1byte - 0 0 0 1 0 0 1 0<br>
 2byte - 0 0 1 1 0 1 0 0<br>
 3byte - 0 1 0 1 0 1 1 0<br>
 4byte - 0 1 1 1 1 0 0 0<br>
 5byte - XOR (|0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|)<br>
 
-6. RX 0x79		// address send<br>
+5. RX 0x79		// address send<br>
 
-7. TX number of bytes --- (128 -1)<br>
+6. TX number of bytes --- (128 -1)<br>
 
-8. Tx 128 byte send<br>
+7. Tx 128 byte send<br>
 
 ### checksunm TX -- XOR(send byte)<br>
-9. RX 0x79		// packet send done .........................<br>
+8. RX 0x79		// packet send done .........................<br>
 
 ------------ loop end ------------------------<br>
 
