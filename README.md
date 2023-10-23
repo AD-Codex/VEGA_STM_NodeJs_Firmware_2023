@@ -1,6 +1,6 @@
 # stm32_firmupdate_Nodejs
 
-stm32 firmupdate step
+## stm32 firmupdate step
 BOOT0 to 1
 
 RESET to 1
