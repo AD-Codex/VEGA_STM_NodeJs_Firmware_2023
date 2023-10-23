@@ -17,9 +17,7 @@
 5. TX 0x00
 6. RX 0x79		// flash Erase success
 
-## load update
-
----------------- loop start ---------------
+## ---------------- loop start ---------------
 1. TX 0x31
 2. TX 0xCE
 3. RX 0x79
@@ -33,21 +31,21 @@
 |0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|<br>
 +---------------+---------------+---------------+---------------+<br>
 
-1. TX - <br>
+5. TX - <br>
 1byte - 0 0 0 1 0 0 1 0<br>
 2byte - 0 0 1 1 0 1 0 0<br>
 3byte - 0 1 0 1 0 1 1 0<br>
 4byte - 0 1 1 1 1 0 0 0<br>
 5byte - XOR (|0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|)<br>
 
-2. RX 0x79		// address send<br>
+6. RX 0x79		// address send<br>
 
-3. TX number of bytes --- (128 -1)<br>
+7. TX number of bytes --- (128 -1)<br>
 
-4. Tx 128 byte send<br>
+8. Tx 128 byte send<br>
 
 ### checksunm TX -- XOR(send byte)<br>
-RX 0x79		// packet send done .........................<br>
+9. RX 0x79		// packet send done .........................<br>
 
 ------------ loop end ------------------------<br>
 
