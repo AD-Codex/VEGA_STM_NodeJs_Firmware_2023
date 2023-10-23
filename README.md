@@ -22,12 +22,12 @@ RX 0x79		// flash Erase success
 
 ## load update
 
-------- loop ---------------
+---------------- loop start ---------------
 TX 0x31
 TX 0xCE
 RX 0x79
 
-send address starting 0x08000000<br>
+### send address starting 0x08000000<br>
 
 0x12345678<br>
 
@@ -36,34 +36,31 @@ send address starting 0x08000000<br>
 |0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|<br>
 +---------------+---------------+---------------+---------------+<br>
 
-TX
-1byte - 0 0 0 1 0 0 1 0
-2byte - 0 0 1 1 0 1 0 0
-3byte - 0 1 0 1 0 1 1 0
-4byte - 0 1 1 1 1 0 0 0
-5byte - XOR (|0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|)
+TX - <br>
+1byte - 0 0 0 1 0 0 1 0<br>
+2byte - 0 0 1 1 0 1 0 0<br>
+3byte - 0 1 0 1 0 1 1 0<br>
+4byte - 0 1 1 1 1 0 0 0<br>
+5byte - XOR (|0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|)<br>
 
-RX 0x79		// address send
+RX 0x79		// address send<br>
 
-TX number of bytes --- (128 -1)
+TX number of bytes --- (128 -1)<br>
 
-Tx 128 byte send
+Tx 128 byte send<br>
 
-checksunm TX -- XOR(send byte)
+### checksunm TX -- XOR(send byte)<br>
+RX 0x79		// packet send done .........................<br>
 
-RX 0x79		// packet send done .........................
+------------ loop end ------------------------<br>
 
-
-
-
-512KB files
-
+## boot mode exit
 
 BOOT0 to 0
 
 RESET to 1
 RESET to 0
-----------------------------------------------
+
 
 
 ## Referecnce
