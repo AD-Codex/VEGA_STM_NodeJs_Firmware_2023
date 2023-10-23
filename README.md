@@ -1,31 +1,28 @@
 # stm32_firmupdate_Nodejs
 
 ## stm32 firmupdate step
-BOOT0 to 1
-
-RESET to 1
-RESET to 0
+1. BOOT0 to 1
+2. RESET to 1
+3. RESET to 0
 
 ## boot mode enter
-
-TX 0x7F
-RX 0x79
+1. TX 0x7F
+2. RX 0x79
 
 ## flash erase
-TX 0x43
-TX 0xBC
-RX 0x79		// erasing flash
-
-TX 0xFF
-TX 0x00
-RX 0x79		// flash Erase success
+1. TX 0x43
+2. TX 0xBC
+3. RX 0x79		// erasing flash
+4. TX 0xFF
+5. TX 0x00
+6. RX 0x79		// flash Erase success
 
 ## load update
 
 ---------------- loop start ---------------
-TX 0x31
-TX 0xCE
-RX 0x79
+1. TX 0x31
+2. TX 0xCE
+3. RX 0x79
 
 ### send address starting 0x08000000<br>
 
@@ -36,18 +33,18 @@ RX 0x79
 |0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|<br>
 +---------------+---------------+---------------+---------------+<br>
 
-TX - <br>
+1. TX - <br>
 1byte - 0 0 0 1 0 0 1 0<br>
 2byte - 0 0 1 1 0 1 0 0<br>
 3byte - 0 1 0 1 0 1 1 0<br>
 4byte - 0 1 1 1 1 0 0 0<br>
 5byte - XOR (|0 0 0 1 0 0 1 0|0 0 1 1 0 1 0 0|0 1 0 1 0 1 1 0|0 1 1 1 1 0 0 0|)<br>
 
-RX 0x79		// address send<br>
+2. RX 0x79		// address send<br>
 
-TX number of bytes --- (128 -1)<br>
+3. TX number of bytes --- (128 -1)<br>
 
-Tx 128 byte send<br>
+4. Tx 128 byte send<br>
 
 ### checksunm TX -- XOR(send byte)<br>
 RX 0x79		// packet send done .........................<br>
@@ -55,11 +52,9 @@ RX 0x79		// packet send done .........................<br>
 ------------ loop end ------------------------<br>
 
 ## boot mode exit
-
-BOOT0 to 0
-
-RESET to 1
-RESET to 0
+1. BOOT0 to 0
+2. RESET to 1
+3. RESET to 0
 
 
 
