@@ -1,4 +1,4 @@
-# stm32_firmupdate_Nodejs
+# STM32 chip firmware update using NodeJs
 
 ## stm32 firmupdate step
 1. BOOT0 to 1
